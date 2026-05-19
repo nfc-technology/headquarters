@@ -1,0 +1,1461 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFC Technology - Aplicación Web</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="icon" href="https://bucket.mlcdn.com/a/3336/3336910/images/d577c668de71834ffb177ae13891eae7f182635a.png">
+    
+    <style>
+        /* --- Base & Theme Variables --- */
+        :root {
+            --primary-color: #967e2d;
+            --primary-color-hover: #7a6824;
+            --background-color: #f7fafc;
+            --card-bg: #ffffff;
+            --text-color: #4a5568;
+            --text-primary: #1f2937;
+            --text-secondary: #4b5563;
+            --text-secondary-public: #6B7280;
+            --input-bg: #fff;
+            --input-border: #e2e8f0;
+            --border-color: #d1d5db;
+            --bg-tertiary: rgba(46, 46, 46, 0.1);
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        html.dark {
+            --primary-color: #967e2d;
+            --primary-color-hover: #525252;
+            --background-color: #111111;
+            --card-bg: rgba(46, 46, 46, 0.5);
+            --text-color: #e2e8f0;
+            --text-primary: #f9fafb;
+            --text-secondary: #d1d5db;
+            --text-secondary-public: #9CA3AF;
+            --input-bg: #000000;
+            --input-border: #525252;
+            --border-color: rgba(46, 46, 46, 0.5);
+            --bg-tertiary: rgba(46, 46, 46, 0.5);
+        }
+
+        /* --- General Styles --- */
+        html { scroll-behavior: smooth; }
+        * { padding: 0; margin: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            padding-top: 120px;
+            overflow-x: hidden;
+        }
+
+       .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: var(--bg-tertiary); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--primary-color); border-radius: 4px; }
+        html.dark .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--primary-color); }
+        
+        
+        #vcard-form input,
+        #vcard-form textarea,
+        .public-profile-settings input,
+        .public-profile-settings textarea {
+            caret-color: var(--primary-color) !important;
+        }
+
+        /* --- Top Menu Bar --- */
+        .top-menu-bar {
+            position: fixed; 
+            top: 2rem; 
+            left: 50%;
+            transform: translateX(-50%); 
+            width: calc(100% - 2rem);
+            max-width: 1480px; 
+            background-color: color-mix(in srgb, var(--card-bg) 85%, transparent);
+            backdrop-filter: blur(10px); 
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: var(--shadow); 
+            border: 0px solid var(--input-border);
+            border-radius: 12px; 
+            padding: 0 1rem;
+            transition: top 0.3s ease-in-out; 
+                                        }
+        .top-menu-content { height: 80px; display: flex; align-items: center; justify-content: space-between; }
+        .logo-container { display: flex; align-items: center; gap: 1rem; }
+        #appLogo { height: 40px; width: 40px; object-fit: cover; border-radius: 8px; }
+        #appBrandNameDisplay { font-size: 1.25rem; font-weight: 700; color: var(--text-primary); }
+        .top-menu-actions { display: flex; align-items: center; gap: 0.5rem; }
+        .fab {
+            width: 40px; height: 40px; border-radius: 50%;
+            background-color: var(--background-color); color: var(--text-primary);
+            border: 1px solid var(--input-border); display: flex;
+            justify-content: center; align-items: center; cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .fab:hover { background-color: var(--input-border); transform: scale(1.1); }
+        .fab:disabled { cursor: not-allowed; opacity: 0.7; }
+
+        .btn-primary {
+            background-color: var(--primary-color); color: white;
+            padding: 0.75rem 1.5rem; border: none; border-radius: 0.5rem;
+            font-weight: 600; text-align: center; transition: background-color 0.3s;
+            cursor: pointer;
+        }
+        .btn-primary:hover { background-color: var(--primary-color-hover); }
+
+        /* --- Side Panel --- */
+        #profiles-side-panel {
+            transition: transform 0.3s ease-in-out; transform: translateX(100%);
+        }
+        #profiles-side-panel.open { transform: translateX(0); }
+        .modal-hidden { display: none; }
+
+        /* --- Toast Notifications --- */
+        #toast {
+            position: fixed; bottom: 20px; left: 50%;
+            transform: translateX(-50%); background-color: #2d3748;
+            color: white; padding: 12px 24px; border-radius: 9999px;
+            font-size: 0.875rem; opacity: 0; visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s, bottom 0.3s;
+            z-index: 1200;
+        }
+        #toast.show { opacity: 1; visibility: visible; bottom: 30px; }
+
+        /* --- Tab Styling --- */
+        .tab-button {
+            padding: 0.5rem 1rem;
+            border-bottom: 2px solid transparent;
+            color: var(--text-secondary);
+            font-weight: 600;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .tab-button.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        /* --- Public Profile Preview Styles --- */
+        #public-profile-preview-container .preview-header-bg {
+            background-color: var(--primary-color);
+        }
+        .preview-action-button {
+             background-color: var(--primary-color);
+             color: white;
+             transition: background-color 0.2s;
+        }
+         .preview-action-button:hover {
+             background-color: var(--primary-color-hover);
+        }
+        #public-preview-title-org {
+            color: var(--text-secondary-public);
+        }
+        #public-profile-preview-container .preview-footer-signature {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+    </style>
+    <script>
+        // Set initial theme based on localStorage or system preference
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark')
+        } else {
+            document.documentElement.classList.remove('dark')
+        }
+        // Set initial primary color from localStorage
+        const savedColor = localStorage.getItem('vcard-primary-color');
+        if (savedColor) {
+            document.documentElement.style.setProperty('--primary-color', savedColor);
+        }
+    </script>
+</head>
+<body class="transition-colors duration-300">
+
+    <div class="top-menu-bar">
+        <div class="top-menu-content">
+            <div class="logo-container">
+                <img id="appLogo" src="https://bucket.mlcdn.com/a/3336/3336910/images/d577c668de71834ffb177ae13891eae7f182635a.png" alt="Signature Logo">
+                <span id="appBrandNameDisplay" class="hidden sm:inline">Creador de Perfiles Digitales</span>
+            </div>
+        
+            <div class="top-menu-actions">
+                <div class="fab" id="viewSavedSignaturesBtn" title="Ver Perfiles Guardados"><i class="fas fa-bookmark"></i></div>
+                <div class="fab" title="Página de Inicio" onclick="window.open('https://bebell-digital-solutions.github.io/easylistings-agency', '_self')"><i class="fa fa-home"></i></div> 
+                <div class="fab" title="Centro de Ayuda" onclick="showToast('El centro de ayuda estará disponible pronto.')"><i class="fa fa-info-circle"></i></div>
+                <div class="fab" id="darkModeToggle" title="Cambiar Tema">
+                    <i class="fa-solid fa-sun block dark:hidden"></i>
+                    <i class="fa-solid fa-moon hidden dark:block"></i>
+                </div>
+                <button id="saveProfileBtnTop" class="btn-primary ml-2 hidden sm:block">Guardar Perfil</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="app-container" class="container mx-auto p-4 sm:p-6 lg:p-8">
+        
+        <main class="flex flex-col lg:flex-row gap-8">
+            
+            <div class="flex-1 min-w-0">
+                <div class="border-b border-[var(--border-color)] mb-6">
+                    <nav class="-mb-px flex space-x-6" aria-label="Tabs">
+                        <button id="vcard-tab-btn" class="tab-button active">Perfil vCard</button>
+                        <button id="public-profile-tab-btn" class="tab-button">Perfil Público</button>
+                    </nav>
+                </div>
+
+                <div class="h-[calc(100vh-250px)] overflow-y-auto custom-scrollbar pr-4">
+                    <div id="vcard-tab-content" class="tab-content active">
+                        <form id="vcard-form" class="space-y-6">
+                                <div class="p-6 bg-[var(--card-bg)] rounded-lg shadow-sm">
+                                    <h3 class="text-lg font-semibold border-b border-[var(--border-color)] pb-3 mb-4 text-[var(--text-primary)]">Titular</h3>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">Prefijo</label><input type="text" id="prefix" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">Sufijo</label><input type="text" id="suffix" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">Nombre</label><input type="text" id="firstname" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">Segundo Nombre</label><input type="text" id="middlename" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">Apellido</label><input type="text" id="lastname" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">Apodo</label><input type="text" id="nickname" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="p-6 bg-[var(--card-bg)] rounded-lg shadow-sm">
+                                    <h3 class="text-lg font-semibold border-b border-[var(--border-color)] pb-3 mb-4 text-[var(--text-primary)]">Imágenes</h3>
+                                    <div class="space-y-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-[var(--text-secondary)]">Subir Foto</label>
+                                            <input type="file" id="photo-upload" accept="image/png, image/jpeg, image/gif" class="mt-1 block w-full text-sm text-[var(--text-secondary)] file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-[var(--primary-color)]/10 file:text-[var(--primary-color)] hover:file:bg-[var(--primary-color)]/20">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-[var(--text-secondary)]">Subir Logo</label>
+                                            <input type="file" id="logo-upload" accept="image/png, image/jpeg, image/gif" class="mt-1 block w-full text-sm text-[var(--text-secondary)] file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-[var(--primary-color)]/10 file:text-[var(--primary-color)] hover:file:bg-[var(--primary-color)]/20">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="p-6 bg-[var(--card-bg)] rounded-lg shadow-sm">
+                                    <h3 class="text-lg font-semibold border-b border-[var(--border-color)] pb-3 mb-4 text-[var(--text-primary)]">Trabajo</h3>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">Organización</label><input type="text" id="organization" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">Título</label><input type="text" id="title" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">Rol</label><input type="text" id="role" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">URL del Trabajo</label><input type="url" id="work_url" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                    </div>
+                                </div>
+
+                                <div class="p-6 bg-[var(--card-bg)] rounded-lg shadow-sm">
+                                    <h3 class="text-lg font-semibold border-b border-[var(--border-color)] pb-3 mb-4 text-[var(--text-primary)]">Correos Electrónicos</h3>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">Correo</label><input type="email" id="email" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">Correo del Trabajo</label><input type="email" id="work_email" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                    </div>
+                                </div>
+
+                                <div class="p-6 bg-[var(--card-bg)] rounded-lg shadow-sm">
+                                    <h3 class="text-lg font-semibold border-b border-[var(--border-color)] pb-3 mb-4 text-[var(--text-primary)]">Teléfonos</h3>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">Teléfono de Casa</label><input type="tel" id="home_phone" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">Teléfono del Trabajo</label><input type="tel" id="work_phone" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">Celular</label><input type="tel" id="cell_phone" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">Buscapersonas</label><input type="tel" id="pager_phone" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">Fax de Casa</label><input type="tel" id="home_fax" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">Fax del Trabajo</label><input type="tel" id="work_fax" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                    </div>
+                                </div>
+
+                                <div class="p-6 bg-[var(--card-bg)] rounded-lg shadow-sm">
+                                    <h3 class="text-lg font-semibold border-b border-[var(--border-color)] pb-3 mb-4 text-[var(--text-primary)]">Dirección de Casa</h3>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div class="sm:col-span-2"><label class="block text-sm font-medium text-[var(--text-secondary)]">Calle</label><input type="text" id="home_street" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">Ciudad</label><input type="text" id="home_city" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">Estado / Provincia</label><input type="text" id="home_state" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">Código Postal</label><input type="text" id="home_postal" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">País</label><input type="text" id="home_country" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                    </div>
+                                </div>
+
+                                <div class="p-6 bg-[var(--card-bg)] rounded-lg shadow-sm">
+                                    <h3 class="text-lg font-semibold border-b border-[var(--border-color)] pb-3 mb-4 text-[var(--text-primary)]">Dirección del Trabajo</h3>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div class="sm:col-span-2"><label class="block text-sm font-medium text-[var(--text-secondary)]">Calle</label><input type="text" id="work_street" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">Ciudad</label><input type="text" id="work_city" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">Estado / Provincia</label><input type="text" id="work_state" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">Código Postal</label><input type="text" id="work_postal" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">País</label><input type="text" id="work_country" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                    </div>
+                                </div>
+
+                                <div class="p-6 bg-[var(--card-bg)] rounded-lg shadow-sm">
+                                    <h3 class="text-lg font-semibold border-b border-[var(--border-color)] pb-3 mb-4 text-[var(--text-primary)]">Redes Sociales</h3>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">LinkedIn</label><input type="url" id="social_linkedin" placeholder="https://www.linkedin.com/in/YOURPROFILE/" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">Twitter</label><input type="url" id="social_twitter" placeholder="https://twitter.com/YOURPROFILE" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">Facebook</label><input type="url" id="social_facebook" placeholder="https://www.facebook.com/YOURPROFILE/" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">Instagram</label><input type="url" id="social_instagram" placeholder="https://www.instagram.com/YOURPROFILE/" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">Threads</label><input type="url" id="social_threads" placeholder="https://www.threads.net/@YOURPROFILE" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">YouTube</label><input type="url" id="social_youtube" placeholder="https://www.youtube.com/c/YOURPROFILE" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">TikTok</label><input type="url" id="social_tiktok" placeholder="https://www.tiktok.com/@YOURPROFILE" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">Pinterest</label><input type="url" id="social_pinterest" placeholder="https://www.pinterest.com/YOURPROFILE/" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">Discord</label><input type="text" id="social_discord" placeholder="your_username" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">Telegram</label><input type="text" id="social_telegram" placeholder="https://t.me/your_username" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">WhatsApp</label><input type="tel" id="social_whatsapp" placeholder="+1234567890" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">Spotify</label><input type="url" id="social_spotify" placeholder="https://open.spotify.com/user/..." class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                        <div><label class="block text-sm font-medium text-[var(--text-secondary)]">Airbnb</label><input type="url" id="social_airbnb" placeholder="https://www.airbnb.com/users/show/..." class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></div>
+                                    </div>
+                                </div>
+
+                                <div class="p-6 bg-[var(--card-bg)] rounded-lg shadow-sm">
+                                    <h3 class="text-lg font-semibold border-b border-[var(--border-color)] pb-3 mb-4 text-[var(--text-primary)]">Otro</h3>
+                                    <div class="space-y-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-[var(--text-secondary)]">Nota</label>
+                                            <textarea id="note" rows="4" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]"></textarea>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-[var(--text-secondary)]">UID</label>
+                                            <input type="text" id="uid" readonly class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)]/50 shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]">
+                                        </div>
+                                    </div>
+                                </div>
+                        </form>
+                    </div>
+
+                    <div id="public-profile-tab-content" class="tab-content space-y-6">
+                        <div class="p-6 bg-[var(--card-bg)] rounded-lg shadow-sm">
+                                <div>
+                                <h3 class="text-lg font-semibold border-b border-[var(--border-color)] pb-3 mb-4 text-[var(--text-primary)]">Información Laboral</h3>
+                                <div id="work-info-links" class="space-y-3">
+                                    </div>
+                            </div>
+                            <div class="public-profile-settings mt-6 pt-6 border-t border-[var(--border-color)]">
+                                <h3 class="text-lg font-semibold border-b border-[var(--border-color)] pb-3 mb-4 text-[var(--text-primary)]">Apariencia</h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-[var(--text-secondary)]">Color Primario</label>
+                                        <input type="color" id="public-primary-color" class="mt-1 h-10 w-full block rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-[var(--text-secondary)]">Color de Fondo</label>
+                                        <input type="color" id="public-background-color" class="mt-1 h-10 w-full block rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-[var(--text-secondary)]">URL de Fondo del Encabezado</label>
+                                        <input type="url" id="public-header-bg-url" placeholder="https://example.com/image.png" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-[var(--text-secondary)]">URL de Foto de Perfil</label>
+                                        <input type="url" id="public-photo-url" placeholder="https://example.com/photo.png" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-[var(--text-secondary)]">URL del Logo</label>
+                                        <input type="url" id="public-logo-url" placeholder="https://example.com/logo.png" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-[var(--text-secondary)]">Forma del Botón de Acción</label>
+                                        <select id="public-button-shape" class="mt-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]">
+                                            <option value="rounded-lg">Redondeado</option>
+                                            <option value="rounded-full">Píldora</option>
+                                            <option value="rounded-md">Cuadrado</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-6 bg-[var(--card-bg)] rounded-lg shadow-sm">
+                            <h3 class="text-lg font-semibold border-b border-[var(--border-color)] pb-3 mb-4 text-[var(--text-primary)]">Botones de Acción Personalizados</h3>
+                            <div id="custom-buttons-container" class="space-y-4">
+                                </div>
+                            <button id="add-custom-button-btn" class="mt-4 w-full text-center py-2 px-4 rounded-md border-2 border-dashed border-[var(--primary-color)] text-[var(--primary-color)] hover:bg-[var(--primary-color)]/10">
+                                <span>+ Añadir Botón</span>
+                            </button>
+                        </div>
+
+                        <div id="shareable-url-container" class="hidden p-6 bg-[var(--card-bg)] rounded-lg shadow-sm">
+                            <label class="block text-sm font-medium text-[var(--text-secondary)] mb-2">URL para Compartir</label>
+                            <div class="flex items-center gap-2">
+                                <input type="text" id="shareable-url-input" readonly class="flex-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)]/50 shadow-sm text-sm text-[var(--text-primary)]">
+                                <button id="copy-url-btn" class="p-2 rounded-md hover:bg-[var(--bg-tertiary)] text-[var(--text-secondary)]" title="Copiar URL"><i class="fa-regular fa-copy"></i></button>
+                                <a id="open-url-btn" href="#" target="_blank" class="p-2 rounded-md hover:bg-[var(--bg-tertiary)] text-[var(--text-secondary)]" title="Abrir URL"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:w-[26rem] lg:flex-shrink-0">
+                <div class="sticky top-8">
+                        <div id="vcard-preview-container">
+                        <h2 class="text-2xl font-bold mb-4 text-[var(--text-primary)]">Vista Previa</h2>
+                        <div class="w-full max-w-sm mx-auto bg-[var(--card-bg)] rounded-2xl shadow-lg overflow-hidden">
+                            <div class="w-full max-w-sm h-32 bg-[var(--primary-color)] relative bg-cover bg-center" style="background-image: url('https://bucket.mlcdn.com/a/3336/3336910/images/cc22ad61e2ee0777b13492321845a5b0d1242e75.png');">
+                                <img id="preview-logo" class="absolute top-4 right-4 h-12 w-12 object-contain" src="" alt="Logo Preview" style="display: none;">
+                            </div>
+                            <div class="relative p-6">
+                                <div class="absolute -mt-20">
+                                    <img id="preview-photo" class="h-24 w-24 rounded-full border-4 border-[var(--card-bg)] object-cover bg-[var(--bg-tertiary)]" src="https://placehold.co/96x96/e2e8f0/64748b?text=Photo" alt="Contact Photo">
+                                </div>
+                                <div class="pt-8 text-center">
+                                    <h3 id="preview-name" class="text-xl font-bold text-[var(--text-primary)]">Su Nombre</h3>
+                                    <p id="preview-title-org" class="text-sm text-[var(--text-secondary)]">Título en Organización</p>
+                                    <div id="preview-social" class="mt-4 flex justify-center flex-wrap gap-4 text-xl text-[var(--text-secondary)]"></div>
+                                </div>
+                                
+                                <div id="preview-details-container" class="mt-6 border-t border-[var(--border-color)] pt-4 space-y-4 text-sm">
+                                    <div id="preview-contact-container" class="hidden">
+                                        <h4 class="font-semibold text-[var(--text-secondary)] mb-2">Información de Contacto</h4>
+                                        <div id="preview-contact-details" class="space-y-2 text-[var(--text-primary)] break-words"></div>
+                                    </div>
+                                    <div id="preview-work-address-container" class="hidden">
+                                        <h4 class="font-semibold text-[var(--text-secondary)] mb-2">Dirección de Trabajo</h4>
+                                        <address id="preview-work-address-details" class="not-italic text-[var(--text-primary)]"></address>
+                                    </div>
+                                    <div id="preview-home-address-container" class="hidden">
+                                        <h4 class="font-semibold text-[var(--text-secondary)] mb-2">Dirección de Casa</h4>
+                                        <address id="preview-home-address-details" class="not-italic text-[var(--text-primary)]"></address>
+                                    </div>
+                                    <div id="preview-note-container" class="hidden">
+                                        <h4 class="font-semibold text-[var(--text-secondary)] mb-2">Nota</h4>
+                                        <p id="preview-note-details" class="text-[var(--text-primary)] whitespace-pre-wrap break-words"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-6 space-y-4 ml-4 mr-4">
+                            <button id="download-btn" class="w-full bg-[var(--primary-color)] hover:opacity-90 text-white font-bold py-3 px-4 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--primary-color)] dark:focus:ring-offset-[var(--background-color)] transition-transform transform hover:scale-105 disabled:opacity-75 disabled:cursor-not-allowed btn-primary">
+                                <span>Descargar vCard</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="public-profile-preview-container" class="hidden">
+                         <h2 class="text-2xl font-bold mb-4 text-[var(--text-primary)]">Vista Previa</h2>
+                         <div id="public-preview-card-bg" class="w-full max-w-sm mx-auto bg-[var(--card-bg)] rounded-2xl shadow-lg overflow-hidden">
+                                <div class="relative">
+                                     <div class="preview-header-bg h-32 relative">
+                                         <img id="public-preview-header-img" src="https://bucket.mlcdn.com/a/3336/3336910/images/cc22ad61e2ee0777b13492321845a5b0d1242e75.png" class="absolute inset-0 w-full h-full object-cover" alt="Header Background">
+                                     </div>
+                                     <div id="public-preview-header-line" class="h-[15px]"></div>
+                                     <div class="absolute inset-x-0 flex justify-center" style="bottom: -75px;">
+                                         <img id="public-preview-photo" class="rounded-full border-4 border-[var(--card-bg)] object-cover bg-[var(--bg-tertiary)]" style="height: 150px; width: 150px;" src="https://placehold.co/96x96/e2e8f0/64748b?text=Photo" alt="Contact Photo">
+                                     </div>
+                                </div>
+                                
+                                <div class="pt-24 pb-6 px-6 text-center">
+                                    <h3 id="public-preview-name" class="text-xl font-bold text-[var(--primary-color)]">Su Nombre</h3>
+                                    <p id="public-preview-title-org">Título en Organización</p>
+                                    <div id="public-preview-social" class="mt-4 flex justify-center flex-wrap gap-3 text-xl text-[var(--text-secondary)]"></div>
+                                </div>
+                                
+                                <div class="px-6 pb-6 space-y-3" id="public-preview-buttons-container">
+                                    </div>
+                                
+                             <div class="space-y-4">
+                                    <div class="px-6 flex justify-center">
+                                        <img id="public-preview-logo" class="h-[100px] w-[100px] object-contain" src="" alt="Logo Preview" style="display: none;">
+                                    </div>
+                                    <div id="public-preview-map-container" class="hidden">
+                                        <iframe id="public-preview-map" class="w-full h-[250px] border-0" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                                    </div>
+                                    <div id="public-preview-footer">
+                                        <a href="https://productos-nfc.com" target="_blank" rel="noopener noreferrer">
+                                         <p class="pt-5 pb-6 px-6 text-center preview-footer-signature text-white">Potenciado con ⭐️ por Tecnología NFC</p>
+                                        </a>
+                                    </div>
+                                </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <footer class="text-center mt-8 py-4 border-t border-[var(--border-color)]">
+            <p class="text-[var(--text-secondary)]" style="font-size: 10px;">Desarrollado con ❤️ por Bebell Digital Solutions.</p>
+        </footer>
+    </div>
+    
+    <div id="profiles-side-panel" class="fixed top-0 right-0 h-full w-80 bg-[var(--card-bg)] shadow-2xl z-40 p-6 flex flex-col">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-[var(--text-primary)]">Perfiles</h2>
+            <button id="profiles-close-btn" class="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-2xl font-bold">×</button>
+        </div>
+        <div class="flex-grow overflow-y-auto custom-scrollbar -mr-4 pr-4">
+            <ul id="profiles-list" class="space-y-2">
+                </ul>
+        </div>
+        <div class="mt-6">
+            <button id="new-profile-btn" class="w-full text-center py-2 px-4 rounded-md bg-[var(--primary-color)] text-white hover:opacity-90 btn-primary">
+                <span>Nuevo Perfil</span>
+            </button>
+        </div>
+    </div>
+    <div id="panel-overlay" class="modal-hidden fixed inset-0 bg-black/60 z-30"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    // --- STATE & DATA ---
+    let profiles = [];
+    let currentProfileId = null;
+    let photoData = { base64: null, type: null };
+    let logoData = { base64: null, type: null };
+    let customButtons = [];
+    let publicProfileData = null; // Holds profile data when in public view mode
+
+    // --- DOM Elements ---
+    const allInputIds = [ 'prefix', 'suffix', 'firstname', 'middlename', 'lastname', 'nickname', 'organization', 'title', 'role', 'work_url', 'email', 'work_email', 'home_phone', 'work_phone', 'cell_phone', 'pager_phone', 'home_fax', 'work_fax', 'home_street', 'home_city', 'home_state', 'home_postal', 'home_country', 'work_street', 'work_city', 'work_state', 'work_postal', 'work_country', 'social_linkedin', 'social_twitter', 'social_facebook', 'social_instagram', 'social_threads', 'social_youtube', 'social_tiktok', 'social_pinterest', 'social_discord', 'social_telegram', 'social_whatsapp', 'social_spotify', 'social_airbnb', 'note', 'uid' ];
+    const publicProfileSettingIds = ['public-primary-color', 'public-background-color', 'public-header-bg-url', 'public-button-shape', 'public-photo-url', 'public-logo-url'];
+    const form = document.getElementById('vcard-form');
+    const downloadBtn = document.getElementById('download-btn');
+    const saveProfileBtn = document.getElementById('saveProfileBtnTop');
+    const photoUpload = document.getElementById('photo-upload');
+    const logoUpload = document.getElementById('logo-upload');
+    // Navigation & Panels
+    const themeToggle = document.getElementById('darkModeToggle');
+    const profilesBtn = document.getElementById('viewSavedSignaturesBtn');
+    const profilesPanel = document.getElementById('profiles-side-panel');
+    const profilesCloseBtn = document.getElementById('profiles-close-btn');
+    const profilesList = document.getElementById('profiles-list');
+    const newProfileBtn = document.getElementById('new-profile-btn');
+    const panelOverlay = document.getElementById('panel-overlay');
+    // Tabs
+    const vcardTabBtn = document.getElementById('vcard-tab-btn');
+    const publicProfileTabBtn = document.getElementById('public-profile-tab-btn');
+    const vcardTabContent = document.getElementById('vcard-tab-content');
+    const publicProfileTabContent = document.getElementById('public-profile-tab-content');
+    const vcardPreview = document.getElementById('vcard-preview-container');
+    const publicProfilePreview = document.getElementById('public-profile-preview-container');
+    // Public Profile Settings
+    const addCustomButtonBtn = document.getElementById('add-custom-button-btn');
+    const customButtonsContainer = document.getElementById('custom-buttons-container');
+    const workInfoLinksContainer = document.getElementById('work-info-links');
+    const photoUrlInput = document.getElementById('public-photo-url');
+    const logoUrlInput = document.getElementById('public-logo-url');
+    const shareableUrlContainer = document.getElementById('shareable-url-container');
+    const shareableUrlInput = document.getElementById('shareable-url-input');
+    const copyUrlBtn = document.getElementById('copy-url-btn');
+    const openUrlBtn = document.getElementById('open-url-btn');
+
+    // --- UTILITY FUNCTIONS ---
+    const showToast = (message) => {
+        const toast = document.createElement('div');
+        toast.id = 'toast';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => { toast.classList.add('show'); }, 10);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                if (document.body.contains(toast)) { document.body.removeChild(toast); }
+            }, 300);
+        }, 3000);
+    };
+    
+    const copyToClipboard = (text) => {
+        if (!navigator.clipboard) {
+            showToast("La función de copiar no es compatible con este navegador.");
+            return;
+        }
+        navigator.clipboard.writeText(text).then(() => {
+            showToast("¡Copiado al portapapeles!");
+        }, (err) => {
+            showToast("Error al copiar.");
+            console.error('No se pudo copiar el texto: ', err);
+        });
+    };
+
+    const formatActionURL = (input) => {
+        if (!input) return '#';
+        if (input.includes('@') && !input.startsWith('mailto:')) {
+            return `mailto:${input}`;
+        }
+        if (/^[\d\s+\-()]+$/.test(input) && !input.startsWith('tel:')) {
+             return `tel:${input.replace(/\D/g, '')}`;
+        }
+        if (!/^(https?:\/\/|tel:|mailto:)/i.test(input)) {
+            return `https://${input}`;
+        }
+        return input;
+    };
+
+    // --- THEME ---
+    const toggleTheme = () => {
+        document.documentElement.classList.toggle('dark');
+        localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+    };
+    
+    // --- TAB MANAGEMENT ---
+    const switchTab = (tabName) => {
+        if (tabName === 'vcard') {
+            vcardTabBtn.classList.add('active');
+            publicProfileTabBtn.classList.remove('active');
+            vcardTabContent.classList.add('active');
+            publicProfileTabContent.classList.remove('active');
+            vcardPreview.classList.remove('hidden');
+            publicProfilePreview.classList.add('hidden');
+        } else {
+            vcardTabBtn.classList.remove('active');
+            publicProfileTabBtn.classList.add('active');
+            vcardTabContent.classList.remove('active');
+            publicProfileTabContent.classList.add('active');
+            vcardPreview.classList.add('hidden');
+            publicProfilePreview.classList.remove('hidden');
+            populateWorkInfoLinks();
+        }
+    };
+
+    // --- PREVIEW UPDATES ---
+    const socialIconSVG = (type) => {
+         const icons = { linkedin: `<i class="fab fa-linkedin"></i>`, twitter: `<i class="fab fa-twitter"></i>`, facebook: `<i class="fab fa-facebook"></i>`, instagram: `<i class="fab fa-instagram"></i>`, threads: `<i class="fab fa-threads"></i>`, youtube: `<i class="fab fa-youtube"></i>`, tiktok: `<i class="fab fa-tiktok"></i>`, pinterest: `<i class="fab fa-pinterest"></i>`, discord: `<i class="fab fa-discord"></i>`, telegram: `<i class="fab fa-telegram"></i>`, whatsapp: `<i class="fab fa-whatsapp"></i>`, spotify: `<i class="fab fa-spotify"></i>`, airbnb: `<i class="fab fa-airbnb"></i>`, };
+         return icons[type] || '';
+    }
+
+    const updateVCardPreview = () => {
+        const getVal = (id) => document.getElementById(id).value.trim();
+        
+        const fullName = [getVal('prefix'), getVal('firstname'), getVal('middlename'), getVal('lastname'), getVal('suffix')].filter(Boolean).join(' ');
+        document.getElementById('preview-name').textContent = fullName || 'Su Nombre';
+        
+        const title = getVal('title');
+        const org = getVal('organization');
+        document.getElementById('preview-title-org').textContent = (title && org) ? `${title} en ${org}` : title || org || 'Título en Organización';
+        
+        const socialFields = [ { type: 'linkedin', url: getVal('social_linkedin') }, { type: 'twitter', url: getVal('social_twitter') }, { type: 'facebook', url: getVal('social_facebook') }, { type: 'instagram', url: getVal('social_instagram') }, { type: 'threads', url: getVal('social_threads') }, { type: 'youtube', url: getVal('social_youtube') }, { type: 'tiktok', url: getVal('social_tiktok') }, { type: 'pinterest', url: getVal('social_pinterest') }, { type: 'discord', url: getVal('social_discord') }, { type: 'telegram', url: getVal('social_telegram') }, { type: 'whatsapp', url: getVal('social_whatsapp') }, { type: 'spotify', url: getVal('social_spotify') }, { type: 'airbnb', url: getVal('social_airbnb') } ];
+        const socialHtml = socialFields.filter(s => s.url).map(s => `<a href="${formatActionURL(s.url)}" target="_blank" class="hover:text-[var(--primary-color)]" title="${s.type}">${socialIconSVG(s.type)}</a>`).join('');
+        document.getElementById('preview-social').innerHTML = socialHtml;
+
+        const contactDetailsContainer = document.getElementById('preview-contact-container');
+        const contactDetailsContent = document.getElementById('preview-contact-details');
+        let contactHtml = [];
+        if (getVal('email')) contactHtml.push(`<div><i class="fa-solid fa-envelope fa-fw w-5 mr-2 text-[var(--text-secondary)]"></i>${getVal('email')}</div>`);
+        if (getVal('work_email')) contactHtml.push(`<div><i class="fa-solid fa-briefcase fa-fw w-5 mr-2 text-[var(--text-secondary)]"></i>${getVal('work_email')}</div>`);
+        if (getVal('cell_phone')) contactHtml.push(`<div><i class="fa-solid fa-mobile-screen-button fa-fw w-5 mr-2 text-[var(--text-secondary)]"></i>${getVal('cell_phone')}</div>`);
+        if (getVal('work_phone')) contactHtml.push(`<div><i class="fa-solid fa-phone fa-fw w-5 mr-2 text-[var(--text-secondary)]"></i>${getVal('work_phone')} (Trabajo)</div>`);
+        if (getVal('home_phone')) contactHtml.push(`<div><i class="fa-solid fa-phone-alt fa-fw w-5 mr-2 text-[var(--text-secondary)]"></i>${getVal('home_phone')} (Casa)</div>`);
+        if (getVal('work_url')) contactHtml.push(`<div><i class="fa-solid fa-globe fa-fw w-5 mr-2 text-[var(--text-secondary)]"></i><a href="${getVal('work_url')}" target="_blank" class="text-[var(--primary-color)] hover:underline">${getVal('work_url')}</a></div>`);
+        
+        contactDetailsContainer.classList.toggle('hidden', contactHtml.length === 0);
+        contactDetailsContent.innerHTML = contactHtml.join('');
+
+        const formatAddress = (street, city, state, postal, country) => [street, `${city}${state ? ', ' + state : ''} ${postal}`, country].filter(Boolean).join('<br>');
+        
+        const workAddressContainer = document.getElementById('preview-work-address-container');
+        const workAddressContent = document.getElementById('preview-work-address-details');
+        const workAddressHtml = formatAddress(getVal('work_street'), getVal('work_city'), getVal('work_state'), getVal('work_postal'), getVal('work_country'));
+        workAddressContainer.classList.toggle('hidden', !workAddressHtml);
+        workAddressContent.innerHTML = workAddressHtml;
+
+        const homeAddressContainer = document.getElementById('preview-home-address-container');
+        const homeAddressContent = document.getElementById('preview-home-address-details');
+        const homeAddressHtml = formatAddress(getVal('home_street'), getVal('home_city'), getVal('home_state'), getVal('home_postal'), getVal('home_country'));
+        homeAddressContainer.classList.toggle('hidden', !homeAddressHtml);
+        homeAddressContent.innerHTML = homeAddressHtml;
+
+        const noteContainer = document.getElementById('preview-note-container');
+        const noteContent = document.getElementById('preview-note-details');
+        const noteText = getVal('note');
+        noteContainer.classList.toggle('hidden', !noteText);
+        noteContent.textContent = noteText;
+        
+        document.getElementById('preview-details-container').classList.toggle('hidden', contactHtml.length === 0 && !workAddressHtml && !homeAddressHtml && !noteText);
+    };
+    
+    const updatePublicProfilePreview = () => {
+        const getVal = (id) => document.getElementById(id).value.trim();
+        const buttonShape = getVal('public-button-shape');
+        
+        const fullName = [getVal('prefix'), getVal('firstname'), getVal('middlename'), getVal('lastname'), getVal('suffix')].filter(Boolean).join(' ');
+        document.getElementById('public-preview-name').textContent = fullName || 'Su Nombre';
+
+        const title = getVal('title');
+        const org = getVal('organization');
+        document.getElementById('public-preview-title-org').textContent = (title && org) ? `${title} en ${org}` : title || org || 'Título en Organización';
+
+        const socialFields = [ { type: 'linkedin', url: getVal('social_linkedin') }, { type: 'twitter', url: getVal('social_twitter') }, { type: 'facebook', url: getVal('social_facebook') }, { type: 'instagram', url: getVal('social_instagram') }, { type: 'threads', url: getVal('social_threads') }, { type: 'youtube', url: getVal('social_youtube') }, { type: 'tiktok', url: getVal('social_tiktok') }, { type: 'pinterest', url: getVal('social_pinterest') }, { type: 'discord', url: getVal('social_discord') }, { type: 'telegram', url: getVal('social_telegram') }, { type: 'whatsapp', url: getVal('social_whatsapp') }, { type: 'spotify', url: getVal('social_spotify') }, { type: 'airbnb', url: getVal('social_airbnb') } ];
+        const socialHtml = socialFields.filter(s => s.url).map(s => `
+            <a href="${formatActionURL(s.url)}" target="_blank"
+               class="flex-shrink-0 flex items-center justify-center w-9 h-9 aspect-square text-white bg-black hover:bg-gray-700 transition-all rounded-full"
+               title="${s.type}">
+                 ${socialIconSVG(s.type)}
+            </a>
+        `).join('');
+        document.getElementById('public-preview-social').innerHTML = socialHtml;
+
+           const publicPhotoPreview = document.getElementById('public-preview-photo');
+           const photoUrl = getVal('public-photo-url');
+           if (photoData.base64) {
+               publicPhotoPreview.src = `data:${photoData.type};base64,${photoData.base64}`;
+           } else if (photoUrl) {
+               publicPhotoPreview.src = photoUrl;
+           } else {
+               publicPhotoPreview.src = 'https://placehold.co/96x96/e2e8f0/64748b?text=Photo';
+           }
+
+           const publicLogoPreview = document.getElementById('public-preview-logo');
+           const logoUrl = getVal('public-logo-url');
+           if (logoData.base64) {
+                publicLogoPreview.src = `data:${logoData.type};base64,${logoData.base64}`;
+                publicLogoPreview.style.display = 'block';
+           } else if (logoUrl) {
+                publicLogoPreview.src = logoUrl;
+                publicLogoPreview.style.display = 'block';
+           } else {
+                publicLogoPreview.style.display = 'none';
+           }
+
+           const primaryColor = getVal('public-primary-color');
+           document.documentElement.style.setProperty('--primary-color', primaryColor);
+           document.getElementById('public-preview-footer').style.backgroundColor = primaryColor;
+           document.getElementById('public-preview-header-line').style.backgroundColor = primaryColor;
+           
+           const backgroundColor = getVal('public-background-color');
+           document.getElementById('public-preview-card-bg').style.backgroundColor = backgroundColor;
+
+           const headerBgUrl = getVal('public-header-bg-url');
+           document.getElementById('public-preview-header-img').src = headerBgUrl ? headerBgUrl : 'https://bucket.mlcdn.com/a/3336/3336910/images/cc22ad61e2ee0777b13492321845a5b0d1242e75.png';
+
+           const buttonsContainer = document.getElementById('public-preview-buttons-container');
+           buttonsContainer.innerHTML = '';
+           
+           const downloadContactBtn = document.createElement('button');
+           downloadContactBtn.id = 'public-download-vcf-btn';
+           downloadContactBtn.className = `preview-action-button block w-full text-center font-bold h-14 px-4 flex items-center justify-center shadow-md focus:outline-none transition-transform transform hover:scale-105 ${buttonShape}`;
+           downloadContactBtn.textContent = 'Descargar Contacto';
+           buttonsContainer.appendChild(downloadContactBtn);
+           
+           customButtons.forEach(button => {
+                if (button.text && button.url) {
+                     const customBtn = document.createElement('a');
+                     customBtn.href = formatActionURL(button.url);
+                     customBtn.target = "_blank";
+                     customBtn.className = `preview-action-button block w-full text-center font-bold h-14 px-4 flex items-center justify-center shadow-md focus:outline-none transition-transform transform hover:scale-105 ${buttonShape}`;
+                     customBtn.textContent = button.text;
+                     buttonsContainer.appendChild(customBtn);
+                }
+           });
+
+           const mapContainer = document.getElementById('public-preview-map-container');
+           const workAddress = [getVal('work_street'), getVal('work_city'), getVal('work_state'), getVal('work_postal'), getVal('work_country')].filter(Boolean).join(', ');
+           if (workAddress) {
+                const mapUrl = `https://www.google.com/maps/embed/v1/place?key=AIzaSyC_g-ajvShrWpvSflLh7Um-gNAACVtHrWw&q=${encodeURIComponent(workAddress)}`;
+                document.getElementById('public-preview-map').src = mapUrl;
+                mapContainer.classList.remove('hidden');
+           } else {
+                mapContainer.classList.add('hidden');
+           }
+
+            const profile = profiles.find(p => p.id === currentProfileId);
+            if (profile && profile.uid) {
+                const pageUrl = window.location.href.split('?')[0].split('#')[0];
+                const publicUrl = `${pageUrl}?profile=${profile.uid}`;
+
+                shareableUrlInput.value = publicUrl;
+                openUrlBtn.href = publicUrl;
+                shareableUrlContainer.classList.remove('hidden');
+            } else {
+                shareableUrlContainer.classList.add('hidden');
+            }
+    };
+
+    const populateWorkInfoLinks = () => {
+         const getVal = (id) => document.getElementById(id).value.trim();
+         const formatAddress = (street, city, state, postal, country) => [street, city, state, postal, country].filter(Boolean).join(', ');
+         workInfoLinksContainer.innerHTML = '';
+         
+         const workAddress = formatAddress(getVal('work_street'), getVal('work_city'), getVal('work_state'), getVal('work_postal'), getVal('work_country'));
+         const homeAddress = formatAddress(getVal('home_street'), getVal('home_city'), getVal('home_state'), getVal('home_postal'), getVal('home_country'));
+
+         const info = [
+              { label: 'Correo del Trabajo', value: getVal('work_email'), href: `mailto:${getVal('work_email')}` },
+              { label: 'Correo Personal', value: getVal('email'), href: `mailto:${getVal('email')}` },
+              { label: 'Teléfono del Trabajo', value: getVal('work_phone'), href: `tel:${getVal('work_phone')}` },
+              { label: 'Celular', value: getVal('cell_phone'), href: `tel:${getVal('cell_phone')}` },
+              { label: 'Teléfono de Casa', value: getVal('home_phone'), href: `tel:${getVal('home_phone')}` },
+              { label: 'Fax del Trabajo', value: getVal('work_fax'), href: `tel:${getVal('work_fax')}` },
+              { label: 'URL del Trabajo', value: getVal('work_url'), href: formatActionURL(getVal('work_url')) },
+              { label: 'Dirección del Trabajo', value: workAddress, href: `https://maps.google.com/?q=${encodeURIComponent(workAddress)}` },
+              { label: 'Dirección de Casa', value: homeAddress, href: `https://maps.google.com/?q=${encodeURIComponent(homeAddress)}` },
+         ];
+
+         let hasContent = false;
+         info.forEach(item => {
+              if(item.value) {
+                   hasContent = true;
+                   const div = document.createElement('div');
+                   div.className = "flex items-center justify-between p-3 bg-[var(--input-bg)] rounded-lg border border-[var(--input-border)]";
+                   div.innerHTML = `
+                        <div class="truncate pr-2">
+                            <p class="text-xs font-medium text-[var(--text-secondary)]">${item.label}</p>
+                            <a href="${item.href}" target="_blank" class="text-sm font-semibold text-[var(--primary-color)] hover:underline truncate block">${item.value}</a>
+                        </div>
+                        <button class="copy-btn text-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)]" data-copy="${item.value}">
+                            <i class="fa-regular fa-copy"></i>
+                        </button>
+                   `;
+                   workInfoLinksContainer.appendChild(div);
+              }
+         });
+         
+         if (!hasContent) {
+            workInfoLinksContainer.innerHTML = `<p class="text-sm text-center text-[var(--text-secondary)] p-4">No hay información para mostrar. Añádela en la pestaña Perfil vCard.</p>`;
+         }
+    };
+
+    // --- IMAGE HANDLING ---
+    const handleImageUrlChange = (url, dataObject, fileUploadElement, previewElementId) => {
+        const isLogo = previewElementId === 'preview-logo';
+        const vcardPreviewImg = document.getElementById(previewElementId);
+        const publicPreviewImg = document.getElementById(isLogo ? 'public-preview-logo' : 'public-preview-photo');
+
+        dataObject.base64 = null;
+        dataObject.type = null;
+        fileUploadElement.value = '';
+
+        if (url) {
+            vcardPreviewImg.src = url;
+            publicPreviewImg.src = url;
+            if (isLogo) {
+                vcardPreviewImg.style.display = 'block';
+                publicPreviewImg.style.display = 'block';
+            }
+        } else {
+            if (isLogo) {
+                vcardPreviewImg.src = ''; vcardPreviewImg.style.display = 'none';
+                publicPreviewImg.src = ''; publicPreviewImg.style.display = 'none';
+            } else {
+                const placeholder = 'https://placehold.co/96x96/e2e8f0/64748b?text=Photo';
+                vcardPreviewImg.src = placeholder;
+                publicPreviewImg.src = placeholder;
+            }
+        }
+    };
+
+    const handleFileChange = (file, dataObject, previewElementId) => {
+        const isLogo = previewElementId === 'preview-logo';
+        const vcardPreviewImg = document.getElementById(previewElementId);
+        const publicPreviewImg = document.getElementById(isLogo ? 'public-preview-logo' : 'public-preview-photo');
+        const urlInputElement = document.getElementById(isLogo ? 'public-logo-url' : 'public-photo-url');
+        urlInputElement.value = '';
+
+        if (!file) {
+            dataObject.base64 = null; dataObject.type = null;
+            if (isLogo) { 
+                vcardPreviewImg.src = ''; vcardPreviewImg.style.display = 'none'; 
+                publicPreviewImg.src = ''; publicPreviewImg.style.display = 'none'; 
+            } else { 
+                const placeholder = 'https://placehold.co/96x96/e2e8f0/64748b?text=Photo';
+                vcardPreviewImg.src = placeholder;
+                publicPreviewImg.src = placeholder;
+            }
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const result = e.target.result;
+            vcardPreviewImg.src = result;
+            publicPreviewImg.src = result;
+            if (isLogo) { 
+                vcardPreviewImg.style.display = 'block'; 
+                publicPreviewImg.style.display = 'block'; 
+            }
+            const [header, base64String] = result.split(',');
+            dataObject.base64 = base64String;
+            dataObject.type = file.type;
+        };
+        reader.readAsDataURL(file);
+    };
+
+    // --- vCARD GENERATION & DOWNLOAD ---
+    const foldVCardLine = (line) => {
+        const maxLineLength = 75;
+        if (line.length <= maxLineLength) return line;
+        let result = line.substring(0, maxLineLength);
+        let rest = line.substring(maxLineLength);
+        while (rest.length > 0) {
+            result += '\r\n ' + rest.substring(0, maxLineLength - 1);
+            rest = rest.substring(maxLineLength - 1);
+        }
+        return result;
+    }
+
+    const formatImageForVCard = (base64Data, mimeType, field) => {
+         const maxLineLength = 75;
+         const prefix = `${field};ENCODING=b;TYPE=${mimeType.split('/')[1].toUpperCase()}:`;
+         let result = prefix;
+         let remainingData = base64Data;
+         let firstChunkSize = maxLineLength - prefix.length;
+         if (firstChunkSize > 0) {
+             result += remainingData.substring(0, firstChunkSize);
+             remainingData = remainingData.substring(firstChunkSize);
+         }
+         while (remainingData.length > 0) {
+            const chunk = remainingData.substring(0, maxLineLength - 1);
+            result += '\r\n ' + chunk;
+            remainingData = remainingData.substring(chunk.length);
+         }
+         return result;
+    };
+    
+    const imageUrlToBase64 = async (url) => {
+        try {
+            // Using a CORS proxy for development/demo purposes. 
+            // In a real-world scenario, images should be hosted on a server that allows cross-origin requests.
+            const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+            const response = await fetch(proxyUrl + url);
+            if (!response.ok) return null;
+            const blob = await response.blob();
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    const [header, base64] = reader.result.split(',');
+                    resolve({ base64, type: blob.type });
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        } catch (error) {
+            console.warn(`Could not fetch image for VCF embedding from ${url}. This might be a CORS issue.`, error);
+            showToast("No se pudo incrustar la imagen de la URL (posiblemente un problema de CORS).");
+            return null;
+        }
+    };
+
+    const generateVCF = (profile) => {
+        const p = (key) => profile[key] || '';
+        let vcfContent = ['BEGIN:VCARD', 'VERSION:3.0'];
+        vcfContent.push(`N:${p('lastname')};${p('firstname')};${p('middlename')};${p('prefix')};${p('suffix')}`);
+        vcfContent.push(`FN:${[p('prefix'), p('firstname'), p('middlename'), p('lastname'), p('suffix')].filter(Boolean).join(' ')}`);
+        if(p('nickname')) vcfContent.push(`NICKNAME:${p('nickname')}`);
+        if(p('organization')) vcfContent.push(`ORG:${p('organization')}`);
+        if(p('title')) vcfContent.push(`TITLE:${p('title')}`);
+        if(p('role')) vcfContent.push(`ROLE:${p('role')}`);
+        if(p('work_url')) vcfContent.push(`URL;type=WORK:${p('work_url')}`);
+        if(p('email')) vcfContent.push(`EMAIL;type=INTERNET,HOME:${p('email')}`);
+        if(p('work_email')) vcfContent.push(`EMAIL;type=INTERNET,WORK:${p('work_email')}`);
+        if(p('home_phone')) vcfContent.push(`TEL;type=HOME,VOICE:${p('home_phone')}`);
+        if(p('work_phone')) vcfContent.push(`TEL;type=WORK,VOICE:${p('work_phone')}`);
+        if(p('cell_phone')) vcfContent.push(`TEL;type=CELL,VOICE:${p('cell_phone')}`);
+        if(p('pager_phone')) vcfContent.push(`TEL;type=PAGER:${p('pager_phone')}`);
+        if(p('home_fax')) vcfContent.push(`TEL;type=HOME,FAX:${p('home_fax')}`);
+        if(p('work_fax')) vcfContent.push(`TEL;type=WORK,FAX:${p('work_fax')}`);
+        if(p('home_street') || p('home_city')) vcfContent.push(`ADR;type=HOME:;;${p('home_street')};${p('home_city')};${p('home_state')};${p('home_postal')};${p('home_country')}`);
+        if(p('work_street') || p('work_city')) vcfContent.push(`ADR;type=WORK:;;${p('work_street')};${p('work_city')};${p('work_state')};${p('work_postal')};${p('work_country')}`);
+        
+        if (profile.photoData?.base64 && profile.photoData?.type) { 
+            vcfContent.push(formatImageForVCard(profile.photoData.base64, profile.photoData.type, 'PHOTO')); 
+        } else if (p('public-photo-url')) {
+            vcfContent.push(`PHOTO;VALUE=URI:${p('public-photo-url')}`);
+        }
+
+        if (profile.logoData?.base64 && profile.logoData?.type) { 
+            vcfContent.push(formatImageForVCard(profile.logoData.base64, profile.logoData.type, 'LOGO'));
+        } else if (p('public-logo-url')) {
+             vcfContent.push(`LOGO;VALUE=URI:${p('public-logo-url')}`);
+        }
+
+        const socialProfiles = [ {type: 'linkedin', value: p('social_linkedin')}, {type: 'twitter', value: p('social_twitter')}, {type: 'facebook', value: p('social_facebook')}, {type: 'instagram', value: p('social_instagram')}, {type: 'threads', value: p('social_threads')}, {type: 'youtube', value: p('social_youtube')}, {type: 'tiktok', value: p('social_tiktok')}, {type: 'pinterest', value: p('social_pinterest')}, {type: 'discord', value: p('social_discord') ? `https://discord.com/users/${p('social_discord')}`:''}, {type: 'telegram', value: p('social_telegram')}, {type: 'whatsapp', value: p('social_whatsapp') ? `https://wa.me/${p('social_whatsapp').replace(/\D/g, '')}`:''}, {type: 'spotify', value: p('social_spotify')}, {type: 'airbnb', value: p('social_airbnb')} ];
+        socialProfiles.forEach(sp => { if(sp.value) vcfContent.push(`X-SOCIALPROFILE;type=${sp.type}:${sp.value}`); });
+        
+        if(p('note')) vcfContent.push(`NOTE:${p('note').replace(/\r\n|\r|\n/g, '\\n')}`);
+        if(p('uid')) vcfContent.push(`UID:${p('uid')}`);
+        
+        vcfContent.push(`REV:${new Date().toISOString()}`, 'END:VCARD');
+        return vcfContent.map(foldVCardLine).join('\r\n');
+    };
+
+    const downloadVCF = async (profile) => {
+        const activeDownloadBtn = document.activeElement.closest('button') || downloadBtn;
+        const btnSpan = activeDownloadBtn.querySelector('span') || activeDownloadBtn;
+        const originalText = btnSpan.textContent;
+        
+        activeDownloadBtn.disabled = true;
+        btnSpan.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Generando...`;
+        
+        try {
+            const profileForVcf = JSON.parse(JSON.stringify(profile));
+
+            if (!profileForVcf.photoData?.base64 && profileForVcf['public-photo-url']) {
+                const fetchedPhoto = await imageUrlToBase64(profileForVcf['public-photo-url']);
+                if (fetchedPhoto) profileForVcf.photoData = fetchedPhoto;
+            }
+            if (!profileForVcf.logoData?.base64 && profileForVcf['public-logo-url']) {
+                const fetchedLogo = await imageUrlToBase64(profileForVcf['public-logo-url']);
+                if (fetchedLogo) profileForVcf.logoData = fetchedLogo;
+            }
+
+            const vcfContent = generateVCF(profileForVcf);
+            const blob = new Blob([vcfContent], { type: 'text/vcard;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const filename = `${profile.firstname || 'contacto'}${profile.lastname ? '_' + profile.lastname : ''}`.replace(/ /g, '_') || 'contacto';
+            a.href = url; a.download = `${filename}.vcf`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("Fallo al generar o descargar vCard:", error);
+            showToast("Error al generar vCard. Revisa la consola para más detalles.");
+        } finally {
+            setTimeout(() => {
+                activeDownloadBtn.disabled = false;
+                btnSpan.textContent = originalText;
+            }, 500);
+        }
+    };
+    
+    // --- CUSTOM BUTTON MANAGEMENT ---
+    const renderCustomButtons = () => {
+        customButtonsContainer.innerHTML = '';
+        customButtons.forEach((button, index) => {
+            const div = document.createElement('div');
+            div.className = 'flex items-center gap-2';
+            div.innerHTML = `
+                <input type="text" data-index="${index}" data-field="text" value="${button.text}" placeholder="Texto del botón" class="flex-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]">
+                <input type="text" data-index="${index}" data-field="url" value="${button.url}" placeholder="Email, teléfono, o URL" class="flex-1 block w-full rounded-md border border-[var(--input-border)] bg-[var(--input-bg)] shadow-sm focus:border-[var(--primary-color)] focus:ring-[var(--primary-color)] text-[var(--text-primary)]">
+                <button data-index="${index}" class="remove-custom-button-btn text-red-500 hover:text-red-700 p-2"><i class="fa-solid fa-trash"></i></button>
+            `;
+            customButtonsContainer.appendChild(div);
+        });
+    };
+    
+    const addCustomButton = () => {
+        customButtons.push({ text: '', url: '' });
+        renderCustomButtons();
+    };
+
+    const updateCustomButton = (index, field, value) => {
+        if(customButtons[index]) {
+            customButtons[index][field] = value;
+        }
+        updatePublicProfilePreview();
+    };
+
+    const removeCustomButton = (index) => {
+        customButtons.splice(index, 1);
+        renderCustomButtons();
+        updatePublicProfilePreview();
+    };
+
+    // --- PROFILE MANAGEMENT (SAVE, LOAD, DELETE) ---
+    const renderProfilesList = () => {
+        profilesList.innerHTML = '';
+        if (profiles.length === 0) {
+            profilesList.innerHTML = `<li class="text-sm text-center text-[var(--text-secondary)] p-4">Aún no hay perfiles guardados.</li>`;
+            return;
+        }
+        profiles.forEach(profile => {
+            const profileName = (profile.firstname || profile.lastname) ? `${profile.firstname || ''} ${profile.lastname || ''}`.trim() : 'Perfil sin Nombre';
+            const li = document.createElement('li');
+            li.className = `flex justify-between items-center p-2 rounded-md cursor-pointer hover:bg-[var(--bg-tertiary)] ${profile.id === currentProfileId ? 'bg-[var(--primary-color)]/20' : ''}`;
+            li.dataset.id = profile.id;
+            li.innerHTML = `<span class="truncate text-[var(--text-primary)]">${profileName}</span><button data-delete-id="${profile.id}" class="text-red-500 hover:text-red-700 text-xs p-1"><i class="fa-solid fa-trash"></i></button>`;
+            profilesList.appendChild(li);
+        });
+    };
+    
+    const loadProfilesFromStorage = () => {
+        profiles = JSON.parse(localStorage.getItem('vcard-profiles')) || [];
+        renderProfilesList();
+    };
+    
+    const clearForm = () => {
+        form.reset();
+        currentProfileId = null;
+        localStorage.removeItem('vcard-last-profile-id');
+        photoData = { base64: null, type: null };
+        logoData = { base64: null, type: null };
+        customButtons = [];
+        document.getElementById('public-primary-color').value = '#967e2d';
+        document.getElementById('public-background-color').value = '#ffffff';
+        document.getElementById('public-header-bg-url').value = '';
+        document.getElementById('public-photo-url').value = '';
+        document.getElementById('public-logo-url').value = '';
+        document.getElementById('public-button-shape').value = 'rounded-lg';
+        
+        handleFileChange(null, photoData, 'preview-photo');
+        handleFileChange(null, logoData, 'preview-logo');
+
+        renderCustomButtons();
+        updateVCardPreview(); 
+        updatePublicProfilePreview();
+        renderProfilesList();
+    };
+
+    const saveCurrentProfile = async () => {
+        const originalSaveText = 'Guardar Perfil';
+        
+        saveProfileBtn.disabled = true;
+        saveProfileBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Guardando...`;
+
+        const profileData = { 
+            id: currentProfileId || crypto.randomUUID(),
+            photoData: photoData,
+            logoData: logoData,
+            customButtons: customButtons
+        };
+        allInputIds.forEach(id => profileData[id] = document.getElementById(id)?.value || '');
+        publicProfileSettingIds.forEach(id => profileData[id] = document.getElementById(id)?.value || '');
+        
+        const existingIndex = profiles.findIndex(p => p.id === profileData.id);
+        if (existingIndex > -1) { 
+            profiles[existingIndex] = { ...profiles[existingIndex], ...profileData };
+        } else { 
+            profiles.push(profileData); 
+        }
+        currentProfileId = profileData.id;
+        
+        const webAppUrl = 'https://script.google.com/macros/s/AKfycbx4Bt3HwdbwVJG-GWQ0_Ug7iY0-j4gcd1NuWCqjrZtBN38A4mmAtd1HGCASWmKDF405/exec';
+        if (!webAppUrl || webAppUrl === 'YOUR_WEB_APP_URL') {
+            localStorage.setItem('vcard-profiles', JSON.stringify(profiles));
+            localStorage.setItem('vcard-last-profile-id', profileData.id);
+            renderProfilesList();
+            showToast("Guardado localmente. Configure la URL del servidor para compartir.");
+            saveProfileBtn.disabled = false;
+            saveProfileBtn.textContent = originalSaveText;
+            updatePublicProfilePreview();
+            return;
+        }
+
+        const dataToSync = { ...profileData };
+        delete dataToSync.photoData;
+        delete dataToSync.logoData;
+
+        try {
+            const response = await fetch(webAppUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(dataToSync),
+                mode: 'cors'
+            });
+
+            if (!response.ok) throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+            
+            const result = await response.json();
+
+            if (result.status === 'success' && result.data) {
+                showToast("¡Perfil guardado y sincronizado!");
+                profileData.uid = result.data.uid;
+                document.getElementById('uid').value = result.data.uid;
+            } else {
+                throw new Error(result.message || "Unknown error from Google Apps Script");
+            }
+        } catch (error) {
+            console.error('Error syncing to Google Sheet:', error);
+            showToast("Guardado localmente, pero falló la sincronización.");
+        } finally {
+            const finalIndex = profiles.findIndex(p => p.id === profileData.id);
+            if (finalIndex > -1) profiles[finalIndex] = profileData;
+            localStorage.setItem('vcard-profiles', JSON.stringify(profiles));
+            localStorage.setItem('vcard-last-profile-id', profileData.id);
+            renderProfilesList();
+            saveProfileBtn.disabled = false;
+            saveProfileBtn.textContent = originalSaveText;
+            updatePublicProfilePreview();
+        }
+    };
+    
+    const loadProfile = (id, closePanel = false) => {
+        const profile = profiles.find(p => p.id === id);
+        if (!profile) return;
+        
+        clearForm();
+        
+        allInputIds.forEach(inputId => {
+            if (document.getElementById(inputId)) {
+                document.getElementById(inputId).value = profile[inputId] || '';
+            }
+        });
+        publicProfileSettingIds.forEach(inputId => {
+            if (document.getElementById(inputId)) {
+                document.getElementById(inputId).value = profile[inputId] || '';
+            }
+        });
+        
+        photoData = profile.photoData || { base64: null, type: null };
+        if (photoData.base64 && photoData.type) {
+            const src = `data:${photoData.type};base64,${photoData.base64}`;
+            document.getElementById('preview-photo').src = src;
+            document.getElementById('public-preview-photo').src = src;
+        } else if (profile['public-photo-url']) {
+             handleImageUrlChange(profile['public-photo-url'], photoData, photoUpload, 'preview-photo');
+        }
+
+        logoData = profile.logoData || { base64: null, type: null };
+        if (logoData.base64 && logoData.type) {
+            const src = `data:${logoData.type};base64,${logoData.base64}`;
+            const previewLogo = document.getElementById('preview-logo');
+            const publicPreviewLogo = document.getElementById('public-preview-logo');
+            previewLogo.src = src;
+            publicPreviewLogo.src = src;
+            previewLogo.style.display = 'block';
+            publicPreviewLogo.style.display = 'block';
+        } else if (profile['public-logo-url']) {
+            handleImageUrlChange(profile['public-logo-url'], logoData, logoUpload, 'preview-logo');
+        }
+
+        customButtons = profile.customButtons || [];
+
+        currentProfileId = id;
+        localStorage.setItem('vcard-last-profile-id', id);
+        renderCustomButtons();
+        updateVCardPreview(); 
+        updatePublicProfilePreview();
+        renderProfilesList();
+        if (closePanel) { toggleProfilesPanel(); }
+    };
+
+    const deleteProfile = (id) => {
+        profiles = profiles.filter(p => p.id !== id);
+        localStorage.setItem('vcard-profiles', JSON.stringify(profiles));
+        if (currentProfileId === id) { clearForm(); } 
+        else { renderProfilesList(); }
+    };
+    
+    const toggleProfilesPanel = () => {
+        profilesPanel.classList.toggle('open');
+        panelOverlay.classList.toggle('modal-hidden');
+    };
+
+    // --- EVENT LISTENERS ---
+    themeToggle.addEventListener('click', toggleTheme);
+    saveProfileBtn.addEventListener('click', saveCurrentProfile);
+    newProfileBtn.addEventListener('click', () => { clearForm(); toggleProfilesPanel(); });
+    profilesBtn.addEventListener('click', toggleProfilesPanel);
+    profilesCloseBtn.addEventListener('click', toggleProfilesPanel);
+    panelOverlay.addEventListener('click', toggleProfilesPanel);
+    
+    profilesList.addEventListener('click', (e) => {
+        const target = e.target.closest('li');
+        const deleteButton = e.target.closest('button[data-delete-id]');
+        if (deleteButton) { deleteProfile(deleteButton.dataset.deleteId); } 
+        else if (target && target.dataset.id) { loadProfile(target.dataset.id, true); }
+    });
+    
+    vcardTabBtn.addEventListener('click', () => switchTab('vcard'));
+    publicProfileTabBtn.addEventListener('click', () => switchTab('public'));
+
+    form.addEventListener('input', () => {
+        updateVCardPreview();
+        updatePublicProfilePreview();
+    });
+
+    downloadBtn.addEventListener('click', async () => {
+        const profileData = {};
+        allInputIds.forEach(id => profileData[id] = document.getElementById(id)?.value || '');
+        publicProfileSettingIds.forEach(id => profileData[id] = document.getElementById(id)?.value || '');
+        profileData.photoData = photoData;
+        profileData.logoData = logoData;
+        profileData.customButtons = customButtons;
+        await downloadVCF(profileData);
+    });
+
+    photoUpload.addEventListener('change', (e) => handleFileChange(e.target.files[0], photoData, 'preview-photo'));
+    logoUpload.addEventListener('change', (e) => handleFileChange(e.target.files[0], logoData, 'preview-logo'));
+
+    document.querySelector('#public-profile-tab-content').addEventListener('input', (e) => {
+        if (publicProfileSettingIds.includes(e.target.id)) {
+            updatePublicProfilePreview();
+        }
+    });
+
+    photoUrlInput.addEventListener('input', (e) => handleImageUrlChange(e.target.value, photoData, photoUpload, 'preview-photo'));
+    logoUrlInput.addEventListener('input', (e) => handleImageUrlChange(e.target.value, logoData, logoUpload, 'preview-logo'));
+
+    copyUrlBtn.addEventListener('click', () => copyToClipboard(shareableUrlInput.value));
+
+    addCustomButtonBtn.addEventListener('click', addCustomButton);
+    customButtonsContainer.addEventListener('input', (e) => {
+        if(e.target.dataset.index) {
+            updateCustomButton(e.target.dataset.index, e.target.dataset.field, e.target.value);
+        }
+    });
+    customButtonsContainer.addEventListener('click', (e) => {
+        const button = e.target.closest('.remove-custom-button-btn');
+        if (button && button.dataset.index) {
+            removeCustomButton(button.dataset.index);
+        }
+    });
+
+    document.getElementById('public-preview-buttons-container').addEventListener('click', async (e) => {
+        const downloadButton = e.target.closest('#public-download-vcf-btn');
+        if (downloadButton) {
+            let profileToDownload = publicProfileData; 
+            if (!profileToDownload) { 
+                profileToDownload = {};
+                allInputIds.forEach(id => profileToDownload[id] = document.getElementById(id)?.value || '');
+                publicProfileSettingIds.forEach(id => profileToDownload[id] = document.getElementById(id)?.value || '');
+                profileToDownload.photoData = photoData;
+                profileToDownload.logoData = logoData;
+                profileToDownload.customButtons = customButtons;
+            }
+            if(profileToDownload) await downloadVCF(profileToDownload);
+        }
+    });
+
+    workInfoLinksContainer.addEventListener('click', (e) => {
+        const button = e.target.closest('.copy-btn');
+        if (button && button.dataset.copy) {
+            copyToClipboard(button.dataset.copy);
+        }
+    });
+    
+    // --- INITIALIZATION & PUBLIC VIEW LOGIC ---
+    const enterPublicViewMode = () => {
+        document.querySelector('.top-menu-bar').classList.add('hidden');
+        document.querySelector('main > div:first-child').classList.add('hidden');
+        document.querySelector('footer').classList.add('hidden');
+        
+        const previewContainer = document.getElementById('public-profile-preview-container');
+        if(previewContainer) {
+            const title = previewContainer.querySelector('h2');
+            if(title) title.classList.add('hidden');
+        }
+
+        const mainContent = document.querySelector('main');
+        mainContent.classList.add('justify-center');
+        mainContent.classList.remove('lg:flex-row');
+
+        const previewColumn = document.querySelector('main > div:last-child');
+        previewColumn.classList.remove('lg:w-[26rem]', 'lg:flex-shrink-0');
+        
+        const style = document.createElement('style');
+        style.innerHTML = `
+            html, body { height: 100%; margin: 0; padding: 0; }
+            body { padding-top: 0 !important; display: flex; align-items: center; justify-content: center; background-color: var(--background-color) !important; }
+            #app-container { max-width: 550px; width: 100%; padding: 0 !important; margin: 0 !important; }
+            main { padding: 0; }
+            #public-profile-preview-container .w-full.max-w-sm { max-width: 100%; border-radius: 0; min-height: 100vh; box-shadow: none; }
+            @media (min-width: 551px) {
+                #public-profile-preview-container .w-full.max-w-sm { border-radius: 1rem; min-height: auto; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); }
+                body { padding: 2rem 0 !important; }
+            }
+        `;
+        document.head.appendChild(style);
+        switchTab('public');
+    };
+    
+    const renderPublicProfileFromData = (profile) => {
+        publicProfileData = profile; // Store for VCF download
+        document.body.style.backgroundColor = profile['public-background-color'] || '#f7fafc';
+        
+        const fullName = [profile.prefix, profile.firstname, profile.middlename, profile.lastname, profile.suffix].filter(Boolean).join(' ');
+        document.getElementById('public-preview-name').textContent = fullName || 'Perfil sin Nombre';
+        document.getElementById('public-preview-title-org').textContent = (profile.title && profile.organization) ? `${profile.title} en ${profile.organization}` : profile.title || profile.organization || '';
+
+        const socialFields = [ { type: 'linkedin', url: profile.social_linkedin }, { type: 'twitter', url: profile.social_twitter }, { type: 'facebook', url: profile.social_facebook }, { type: 'instagram', url: profile.social_instagram }, { type: 'threads', url: profile.social_threads }, { type: 'youtube', url: profile.social_youtube }, { type: 'tiktok', url: profile.social_tiktok }, { type: 'pinterest', url: profile.social_pinterest }, { type: 'discord', url: profile.social_discord }, { type: 'telegram', url: profile.social_telegram }, { type: 'whatsapp', url: profile.social_whatsapp }, { type: 'spotify', url: profile.social_spotify }, { type: 'airbnb', url: profile.social_airbnb } ];
+        document.getElementById('public-preview-social').innerHTML = socialFields.filter(s => s.url).map(s => `<a href="${formatActionURL(s.url)}" target="_blank" class="flex-shrink-0 flex items-center justify-center w-9 h-9 aspect-square text-white bg-black hover:bg-gray-700 transition-all rounded-full" title="${s.type}">${socialIconSVG(s.type)}</a>`).join('');
+
+        document.getElementById('public-preview-photo').src = profile['public-photo-url'] || 'https://placehold.co/150x150/e2e8f0/64748b?text=Photo';
+        const logoEl = document.getElementById('public-preview-logo');
+        if (profile['public-logo-url']) {
+            logoEl.src = profile['public-logo-url'];
+            logoEl.style.display = 'block';
+        } else {
+            logoEl.style.display = 'none';
+        }
+
+        const primaryColor = profile['public-primary-color'] || '#967e2d';
+        document.documentElement.style.setProperty('--primary-color', primaryColor);
+        document.getElementById('public-preview-footer').style.backgroundColor = primaryColor;
+        document.getElementById('public-preview-header-line').style.backgroundColor = primaryColor;
+        document.getElementById('public-preview-card-bg').style.backgroundColor = profile['public-background-color'] || '#ffffff';
+        document.getElementById('public-preview-header-img').src = profile['public-header-bg-url'] || 'https://bucket.mlcdn.com/a/3336/3336910/images/cc22ad61e2ee0777b13492321845a5b0d1242e75.png';
+
+        const buttonsContainer = document.getElementById('public-preview-buttons-container');
+        const buttonShape = profile['public-button-shape'] || 'rounded-lg';
+        buttonsContainer.innerHTML = '';
+        
+        const downloadBtnEl = document.createElement('button');
+        downloadBtnEl.id = 'public-download-vcf-btn';
+        downloadBtnEl.className = `preview-action-button block w-full text-center font-bold h-14 px-4 flex items-center justify-center shadow-md focus:outline-none transition-transform transform hover:scale-105 ${buttonShape}`;
+        downloadBtnEl.textContent = 'Descargar Contacto';
+        buttonsContainer.appendChild(downloadBtnEl);
+
+        let fetchedCustomButtons = profile.customButtons || [];
+        if (typeof fetchedCustomButtons === 'string' && fetchedCustomButtons) {
+            try { fetchedCustomButtons = JSON.parse(fetchedCustomButtons); } catch (e) { console.error('Error parsing custom buttons', e); fetchedCustomButtons = []; }
+        }
+
+        fetchedCustomButtons.forEach(button => {
+            if (button.text && button.url) {
+                const customBtn = document.createElement('a');
+                customBtn.href = formatActionURL(button.url);
+                customBtn.target = "_blank";
+                customBtn.className = `preview-action-button block w-full text-center font-bold h-14 px-4 flex items-center justify-center shadow-md focus:outline-none transition-transform transform hover:scale-105 ${buttonShape}`;
+                customBtn.textContent = button.text;
+                buttonsContainer.appendChild(customBtn);
+            }
+        });
+
+        const mapContainer = document.getElementById('public-preview-map-container');
+        const workAddress = [profile.work_street, profile.work_city, profile.work_state, profile.work_postal, profile.work_country].filter(Boolean).join(', ');
+        if (workAddress) {
+            const mapUrl = `https://www.google.com/maps/embed/v1/place?key=AIzaSyC_g-ajvShrWpvSflLh7Um-gNAACVtHrWw&q=${encodeURIComponent(workAddress)}`;
+            document.getElementById('public-preview-map').src = mapUrl;
+            mapContainer.classList.remove('hidden');
+        } else {
+            mapContainer.classList.add('hidden');
+        }
+    };
+
+    const renderPublicProfileError = () => {
+        enterPublicViewMode();
+        document.getElementById('public-preview-name').textContent = 'Error';
+        document.getElementById('public-preview-title-org').textContent = 'No se pudo cargar el perfil.';
+    };
+
+    const fetchAndDisplayPublicProfile = async (uid) => {
+        const webAppUrl = 'https://script.google.com/macros/s/AKfycbynvfLLf6Lu9y3qfDrPSEHzXD6M3-dudLUwDKd-2LY-CBsN7Qkvui3GzAlSsMAXAlCD/exec';
+        const fetchUrl = `${webAppUrl}?profile=${uid}`;
+
+        document.getElementById('public-preview-name').textContent = 'Cargando Perfil...';
+        enterPublicViewMode();
+
+        try {
+            const response = await fetch(fetchUrl);
+            if (!response.ok) {
+                throw new Error('El perfil no se encontró o hubo un error en el servidor.');
+            }
+
+            const result = await response.json();
+            if (result && result.status === 'success' && result.data) {
+                renderPublicProfileFromData(result.data);
+            } else {
+                throw new Error(result.message || 'Se recibieron datos de perfil no válidos.');
+            }
+        } catch (error) {
+            console.error('Fallo al obtener el perfil público:', error);
+            renderPublicProfileError();
+        }
+    };
+
+    const initializeApp = () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const profileUidFromUrl = urlParams.get('profile');
+
+        if (profileUidFromUrl) {
+            fetchAndDisplayPublicProfile(profileUidFromUrl);
+        } else {
+            loadProfilesFromStorage();
+            const lastProfileId = localStorage.getItem('vcard-last-profile-id');
+            const profileToLoad = profiles.find(p => p.id === lastProfileId) || profiles[0];
+            if (profileToLoad) {
+                loadProfile(profileToLoad.id);
+            } else {
+                clearForm();
+            }
+            switchTab('vcard');
+        }
+    };
+
+    initializeApp();
+});
+</script>
+</body>
+</html>
